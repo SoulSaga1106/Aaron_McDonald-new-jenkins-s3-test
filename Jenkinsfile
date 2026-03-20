@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    options {
+        skipDefaultCheckout(true)
+    }
+
     environment {
         AWS_DEFAULT_REGION = 'us-east-2'
         TF_IN_AUTOMATION   = 'true'
@@ -13,24 +17,15 @@ pipeline {
             }
         }
 
-        stage('Terraform Init') {
-            steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'JenkinsTest' // change before runtime to match the Jenkins credentials 
-                ]]) {
-                   sh 'terraform init -reconfigure'
-                }
-            }
-        }
-
         stage('Terraform Apply') {
             steps {
                 withCredentials([[
                     $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'JenkinsTest' // change
+                    credentialsId: 'JenkinsTest'
                 ]]) {
                     sh '''
+                        rm -rf .terraform terraform.tfstate terraform.tfstate.backup
+                        terraform init -reconfigure
                         terraform plan -out=tfplan
                         terraform apply -auto-approve tfplan
                     '''
@@ -56,12 +51,16 @@ pipeline {
                     if (destroyChoice == 'yes') {
                         withCredentials([[
                             $class: 'AmazonWebServicesCredentialsBinding',
-                            credentialsId: 'JenkinsTest' //change
+                            credentialsId: 'JenkinsTest'
                         ]]) {
-                            sh 'terraform destroy -auto-approve'
+                            sh '''
+                                rm -rf .terraform
+                                terraform init -reconfigure
+                                terraform destroy -auto-approve
+                            '''
                         }
                     } else {
-                        echo "Skipping destroy"
+                        echo 'Skipping destroy'
                     }
                 }
             }
