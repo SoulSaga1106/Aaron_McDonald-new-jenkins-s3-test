@@ -19,7 +19,7 @@ pipeline {
                     $class: 'AmazonWebServicesCredentialsBinding',
                     credentialsId: 'JenkinsTest' // change before runtime to match the Jenkins credentials 
                 ]]) {
-                    sh 'terraform init'
+                   sh 'terraform init -reconfigure'
                 }
             }
         }
