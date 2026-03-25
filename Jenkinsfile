@@ -17,6 +17,44 @@ pipeline {
             }
         }
 
+        stage('Terraform Init') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'JenkinsTest'
+                ]]) {
+                    sh '''
+                       
+                        terraform init -reconfigure
+                    '''
+                }
+            }
+        }
+
+        stage('Terraform Validate') {
+            steps {
+                //terraform validate does not need credentials
+                 {
+                    sh '''
+                        terraform validate
+                    '''
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'JenkinsTest'
+                ]]) {
+                    sh '''
+                        terraform plan -out=tfplan
+                    '''
+                }
+            }
+        }
+
         stage('Terraform Apply') {
             steps {
                 withCredentials([[
@@ -24,16 +62,13 @@ pipeline {
                     credentialsId: 'JenkinsTest'
                 ]]) {
                     sh '''
-                        rm -rf .terraform terraform.tfstate terraform.tfstate.backup
-                        terraform init -reconfigure
-                        terraform plan -out=tfplan
                         terraform apply -auto-approve tfplan
                     '''
                 }
             }
         }
 
-        stage('Optional Destroy') {
+        stage('Terraform Destroy') {
             steps {
                 script {
                     def destroyChoice = input(
@@ -54,8 +89,6 @@ pipeline {
                             credentialsId: 'JenkinsTest'
                         ]]) {
                             sh '''
-                                rm -rf .terraform
-                                terraform init -reconfigure
                                 terraform destroy -auto-approve
                             '''
                         }
