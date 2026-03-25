@@ -24,21 +24,25 @@ pipeline {
                     credentialsId: 'JenkinsTest'
                 ]]) {
                     sh '''
-                       
                         terraform init -reconfigure
                     '''
                 }
             }
         }
 
+        stage('Terraform Format') {
+            steps {
+                sh '''
+                    terraform fmt -check
+                '''
+            }
+        }
+
         stage('Terraform Validate') {
             steps {
-                //terraform validate does not need credentials
-                 {
-                    sh '''
-                        terraform validate
-                    '''
-                }
+                sh '''
+                    terraform validate
+                '''
             }
         }
 
